@@ -1,0 +1,39 @@
+# Secrets — NEVER commit
+.env
+.env.local
+
+# Local runtime state — regenerated on each run
+code/state/sessions/*/
+!code/state/sessions/.gitkeep
+code/sandbox/*.txt
+code/.venv/
+gateway/.venv/
+gateway/*.db
+gateway/usage.json
+
+# FAISS vector index and agent memory (runtime, regenerated)
+code/state/index.faiss
+code/state/index_ids.json
+code/state/memory.json
+
+# Usage tracking (runtime, not source)
+code/usage.json
+
+# Generated visualizations (e.g. dag.png from graph executor)
+*.png
+
+# Build / cache artifacts
+**/__pycache__/
+**/*.pyc
+**/uv.lock
+**/.pytest_cache/
+
+# Editors
+.vscode/
+.idea/
+
+# macOS metadata (all levels)
+**/.DS_Store
+
+# Scratch input (runtime, user-specific)
+query.txt
