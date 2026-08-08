@@ -4,7 +4,9 @@ The orchestrator (flow.py) treats every node as a `Skill` object loaded
 from agent_config.yaml. There is no Python class per skill — that
 abstraction would have to be added at the point where a skill needs
 behaviour the orchestrator can't infer from the yaml. Today every skill
-either calls the gateway or (for sandbox_executor) calls sandbox.py.
+either calls the gateway or — for the coder skill — automatically runs the
+generated code through sandbox.py inline, making sandbox execution invisible
+to the planning layer.
 
 What lives here:
   - Skill / SkillRegistry
@@ -259,9 +261,10 @@ async def run_skill(skill: Skill, node_id: str, graph_nodes,
     forward — Memory works in S8 because the orchestrator delivers the
     hits, not just because the FAISS index is on disk.
 
-    sandbox_executor bypasses the gateway: it picks the `code` field out of
-    its upstream coder node and runs sandbox.run_python directly. All other
-    skills are LLM-backed and route through the V8 gateway with
+    sandbox execution invisible to the planning layer: after the LLM coder
+    returns a `code` field, run_python() is called here and the result is
+    merged into the coder's AgentResult.output before it reaches the DAG.
+    All other skills are LLM-backed and route through the V8 gateway with
     agent=<skill_name> so agent_routing.yaml + cost-by-agent kick in."""
     resolved = resolve_inputs(graph_nodes[node_id]["inputs"], graph_nodes, query)
     # Per-node sub-question from the Planner's `metadata.question`. Travels
@@ -275,24 +278,9 @@ async def run_skill(skill: Skill, node_id: str, graph_nodes,
                              memory_hits=memory_hits, question=question)
     started = time.time()
 
-    if skill.name == "sandbox_executor":
-        code = ""
-        for r in resolved:
-            if r.get("kind") == "upstream" and isinstance(r.get("output"), dict):
-                code = r["output"].get("code") or code
-        if not code:
-            return AgentResult(
-                success=False, agent_name=skill.name,
-                error="no code in upstream coder output",
-                elapsed_s=time.time() - started,
-            ), rendered
-        from sandbox import run_python
-        out = run_python(code)
-        return AgentResult(
-            success=(out["exit_code"] == 0 and not out["timed_out"]),
-            agent_name=skill.name, output=out,
-            elapsed_s=time.time() - started,
-        ), rendered
+    # sandbox_executor no longer exists as a DAG node. The sandbox is run
+    # inline here whenever ANY skill's LLM reply contains a `code` field.
+    # This happens right after the gateway call below, before returning.
 
     tools = tool_payload(skill.tools_allowed)
     if tools:
@@ -354,6 +342,35 @@ async def run_skill(skill: Skill, node_id: str, graph_nodes,
             provider=reply.get("provider", ""),
             error=err,
         ), rendered
+
+    # ── Inline sandbox hook ───────────────────────────────────────────────────
+    # If the skill's LLM output contains a `code` field, run it through the
+    # sandbox right here and attach the execution result back into `parsed`
+    # as `sandbox_result`. This replaces the old sandbox_executor DAG node:
+    # the sandbox is now invisible scaffolding, not a planning-visible skill.
+    # The formatter receives a coder output that already contains both the
+    # code *and* the execution outcome in a single node's result.
+    code = parsed.get("code") if isinstance(parsed, dict) else None
+    if isinstance(code, str) and code.strip():
+        from sandbox import run_python as _run_python
+        print(f"[skills] running sandbox for {skill.name} node {node_id}")
+        sandbox_out = _run_python(code)
+        parsed["sandbox_result"] = sandbox_out
+        sandbox_ok = sandbox_out["exit_code"] == 0 and not sandbox_out["timed_out"]
+        if not sandbox_ok:
+            err_msg = (
+                f"sandbox failed: exit_code={sandbox_out['exit_code']}, "
+                f"timed_out={sandbox_out['timed_out']}, "
+                f"stderr={sandbox_out['stderr'][:200]}"
+            )
+            print(f"[skills] {err_msg}")
+            return AgentResult(
+                success=False, agent_name=skill.name,
+                output=parsed, successors=successors,
+                elapsed_s=time.time() - started,
+                provider=reply.get("provider", ""),
+                error=err_msg,
+            ), rendered
 
     return AgentResult(
         success=True,

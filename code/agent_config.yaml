@@ -71,18 +71,22 @@ formatter:
   max_tokens: 1500
   description: Renders the final answer for the user. Conventional terminal node — its output.final_answer is what the executor returns.
 
+# sandbox_executor: RETIRED as a DAG skill. Sandbox execution is now
+# performed inline inside run_skill() for any skill that emits a `code`
+# field. This entry is kept so that replay.py can still load old sessions
+# that reference it; it is never added to new DAGs.
 sandbox_executor:
   prompt: prompts/sandbox_executor.md
   temperature: 0.0
   max_tokens: 400
-  description: Runs code from a Coder node in the sandbox and returns stdout, stderr, exit code, and any generated files.
+  description: "[RETIRED] Sandbox execution is now inline in the coder path. This entry exists for replay compatibility only."
 
 coder:
   prompt: prompts/coder.md
   internal_successors: [sandbox_executor]
   temperature: 0.2
   max_tokens: 1500
-  description: STUB. Student assignment for Session 8. Emits Python code; the orchestrator hands it to sandbox_executor next.
+  description: Emits Python code and runs it in the inline sandbox. Returns both code and execution result (stdout, exit_code) in a single node.
 
 browser:
   prompt: prompts/browser.md

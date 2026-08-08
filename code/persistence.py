@@ -42,7 +42,8 @@ def _atomic_write(path: Path, data: bytes | str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
     mode = "wb" if isinstance(data, bytes) else "w"
-    with open(tmp, mode) as f:
+    encoding = None if isinstance(data, bytes) else "utf-8"
+    with open(tmp, mode, encoding=encoding) as f:
         f.write(data)
     os.replace(tmp, path)
 

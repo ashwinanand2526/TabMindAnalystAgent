@@ -7,8 +7,7 @@ Available skills:
   summariser         condense long content
   critic             pass/fail evaluation of an upstream node
   formatter          render the final user-facing answer (TERMINAL)
-  coder              emit Python (stub; routes to sandbox_executor)
-  sandbox_executor   run Python from coder
+  coder              emit and execute Python; the sandbox runs automatically
   (browser           reserved for Session 9)
 
 Output (JSON, no markdown):
