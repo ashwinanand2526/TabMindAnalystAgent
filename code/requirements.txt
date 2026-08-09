@@ -4,5 +4,7 @@ ddgs
 tavily-python
 crawl4ai
 python-dotenv
+fastapi
+uvicorn[standard]
 pytest
 pytest-asyncio

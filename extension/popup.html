@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tab Researcher Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="logo-area">
+        <div class="logo-orb"></div>
+        <h1>Tab Researcher <span>Agent</span></h1>
+      </div>
+      <div class="server-status" id="server-status" title="FastAPI Bridge Connection Status">
+        <span class="status-indicator offline"></span>
+        <span class="status-text">Connecting...</span>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="app-main">
+      <!-- Section 1: Tab Selection -->
+      <section id="tab-selection-section" class="panel active">
+        <div class="panel-header">
+          <h2>Select Tabs to Compare</h2>
+          <span class="badge" id="selected-count">0 selected</span>
+        </div>
+        
+        <div class="tabs-list-wrapper">
+          <div class="tabs-list" id="tabs-list">
+            <!-- Dynamically populated via popup.js -->
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <p>Scanning browser tabs...</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="control-row">
+          <div class="select-wrapper">
+            <label for="focus-select">Analysis Focus</label>
+            <select id="focus-select">
+              <option value="balanced" selected>Balanced Comparison</option>
+              <option value="price">Lowest Price Emphasis</option>
+              <option value="specs">Technical Specs Emphasis</option>
+              <option value="reviews">User Reviews & Ratings</option>
+            </select>
+          </div>
+          <button id="analyze-btn" class="btn primary" disabled>
+            <span>Analyze Tabs</span>
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"></line><polygon points="22 2 15 22 11 13 2 9 22 2"></polygon></svg>
+          </button>
+        </div>
+      </section>
+
+      <!-- Section 2: Progress Stream -->
+      <section id="progress-section" class="panel">
+        <div class="panel-header">
+          <h2>Analyzing Tabs...</h2>
+        </div>
+        
+        <div class="progress-box">
+          <div class="progress-bar-container">
+            <div class="progress-bar-fill" id="progress-bar-fill"></div>
+          </div>
+          <div class="progress-meta">
+            <span id="progress-percentage">0%</span>
+            <span id="current-step-label">Initializing agent planner...</span>
+          </div>
+        </div>
+
+        <div class="console-wrapper">
+          <div class="console-header">
+            <span>Agent Cognitive Stream</span>
+            <span class="live-dot animate"></span>
+          </div>
+          <div class="console-logs" id="console-logs">
+            <!-- SSE log messages go here -->
+          </div>
+        </div>
+      </section>
+
+      <!-- Section 3: Final Results -->
+      <section id="results-section" class="panel">
+        <div class="panel-header">
+          <h2>Analysis Results</h2>
+          <button id="reset-btn" class="btn secondary sm">Compare New</button>
+        </div>
+
+        <!-- Verdict Card -->
+        <div class="verdict-card" id="verdict-card">
+          <div class="verdict-badge">Winner</div>
+          <h3 id="verdict-winner">Product Name</h3>
+          <p id="verdict-reason">Winning reason description...</p>
+          
+          <div class="caveats-box" id="caveats-box">
+            <h4>Key Caveats / Trade-offs</h4>
+            <ul id="caveats-list">
+              <!-- Caveats dynamic list -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Scored Comparison Table -->
+        <div class="matrix-wrapper">
+          <h3>Scored Comparison Matrix</h3>
+          <div class="table-container">
+            <table id="comparison-table">
+              <thead>
+                <!-- Dynamically populated headers -->
+              </thead>
+              <tbody>
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Full Analytical Summary -->
+        <div class="summary-wrapper">
+          <h3>Analytical Summary</h3>
+          <div class="markdown-body" id="analysis-summary-text">
+            <!-- Full text response formatting -->
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

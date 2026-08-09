@@ -23,3 +23,6 @@ retriever: github
 sandbox_executor: github
 coder: gemini
 browser: gemini
+tab_reader: gemini
+comparator: gemini
+verdict: groq

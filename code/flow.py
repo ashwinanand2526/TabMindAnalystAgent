@@ -169,9 +169,10 @@ class Graph:
 # ── Executor ─────────────────────────────────────────────────────────────────
 
 class Executor:
-    def __init__(self, registry: SkillRegistry | None = None):
+    def __init__(self, registry: SkillRegistry | None = None, on_node_event=None):
         ensure_gateway()
         self.registry = registry or SkillRegistry()
+        self.on_node_event = on_node_event
 
     async def run(self, query: str, *, session_id: str | None = None,
                   resume: bool = False) -> str:
@@ -230,6 +231,8 @@ class Executor:
 
             for nid in ready:
                 graph.mark(nid, "running")
+                if self.on_node_event:
+                    self.on_node_event(nid, "node_started", {"skill": graph.g.nodes[nid]["skill"]})
             store.write_graph(graph.g)
             _viz.render(sid)
 
@@ -240,6 +243,12 @@ class Executor:
                 executed_count += 1
                 graph.g.nodes[nid]["result"] = result
                 graph.mark(nid, "complete" if result.success else "failed")
+                if self.on_node_event:
+                    self.on_node_event(nid, "node_complete" if result.success else "node_failed", {
+                        "skill": graph.g.nodes[nid]["skill"],
+                        "elapsed_s": result.elapsed_s,
+                        "error": result.error
+                    })
                 store.write_node(NodeState(
                     node_id=nid, skill=graph.g.nodes[nid]["skill"],
                     status=graph.g.nodes[nid]["status"],
@@ -255,9 +264,15 @@ class Executor:
 
                 if result.success:
                     if graph.g.nodes[nid]["skill"] == "critic":
-                        if handle_critic_verdict(nid, result, graph,
-                                                 recovered_branches,
-                                                 critic_fail_cap_hit):
+                        has_recovery = handle_critic_verdict(nid, result, graph,
+                                                             recovered_branches,
+                                                             critic_fail_cap_hit)
+                        if has_recovery:
+                            if self.on_node_event:
+                                self.on_node_event(nid, "critic_fail_recovery", {
+                                    "skill": "critic",
+                                    "rationale": result.output.get("rationale")
+                                })
                             continue
                         # verdict == pass: the child is now ready to run.
                     graph.extend_from(nid, result, registry=self.registry)

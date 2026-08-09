@@ -278,7 +278,27 @@ async def run_skill(skill: Skill, node_id: str, graph_nodes,
                              memory_hits=memory_hits, question=question)
     started = time.time()
 
-    # sandbox_executor no longer exists as a DAG node. The sandbox is run
+    # Legacy support for retired sandbox_executor (used in unit tests / old traces)
+    if skill.name == "sandbox_executor":
+        code = ""
+        for r in resolved:
+            if r.get("kind") == "upstream" and isinstance(r.get("output"), dict):
+                code = r["output"].get("code") or code
+        if not code:
+            return AgentResult(
+                success=False, agent_name=skill.name,
+                error="no code in upstream coder output",
+                elapsed_s=time.time() - started,
+            ), rendered
+        from sandbox import run_python
+        out = run_python(code)
+        return AgentResult(
+            success=(out["exit_code"] == 0 and not out["timed_out"]),
+            agent_name=skill.name, output=out,
+            elapsed_s=time.time() - started,
+        ), rendered
+
+    # sandbox_executor no longer exists as a DAG node in standard runs. The sandbox is run
     # inline here whenever ANY skill's LLM reply contains a `code` field.
     # This happens right after the gateway call below, before returning.
 

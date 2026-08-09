@@ -8,6 +8,9 @@ Available skills:
   critic             pass/fail evaluation of an upstream node
   formatter          render the final user-facing answer (TERMINAL)
   coder              emit and execute Python; the sandbox runs automatically
+  tab_reader         parse pre-fetched browser-tab HTML into a structured product/content record
+  comparator         build a normalised comparison matrix from N tab_reader or distiller outputs
+  verdict            apply user focus weights to the comparator matrix and pick a winner
   (browser           reserved for Session 9)
 
 Output (JSON, no markdown):
@@ -65,6 +68,18 @@ there is nothing to fan out over):
    {"skill":"formatter","inputs":["USER_QUERY","n:r1"],
     "metadata":{"label":"out"}}]}
 
+Example — fetch a page THEN extract structured fields (use distiller,
+not coder, for pure field extraction — distiller is cheaper, faster,
+and triggers the Critic quality gate automatically):
+{"rationale": "Fetch Wikipedia page then extract the requested fields.",
+ "nodes": [
+   {"skill":"researcher","inputs":["USER_QUERY"],
+    "metadata":{"label":"r1","question":"Fetch the Wikipedia page for Nikola Tesla"}},
+   {"skill":"distiller","inputs":["n:r1"],
+    "metadata":{"label":"d1","question":"Extract birth_year, death_year, birth_place, us_patents from the researcher's findings"}},
+   {"skill":"formatter","inputs":["USER_QUERY","n:d1"],
+    "metadata":{"label":"out"}}]}
+
 Example — fan-out over N items ("populations of London, Paris,
 Berlin; which two are closest?"). Each researcher is scoped by
 metadata.question and does NOT receive USER_QUERY; the formatter
@@ -79,3 +94,14 @@ does, so it can answer the comparison the user asked for:
     "metadata":{"label":"rB","question":"current population of Berlin"}},
    {"skill":"formatter","inputs":["USER_QUERY","n:rL","n:rP","n:rB"],
     "metadata":{"label":"out"}}]}
+
+Skill-selection rules (read before choosing):
+  - Use DISTILLER (not coder) for: extracting named fields, pulling
+    numbers out of prose, structured data from web pages. Distiller
+    is auto-critiqued — a Critic node is inserted on its output edge
+    and will fail the node if fields are fabricated or missing.
+  - Use CODER only for: arithmetic, sorting, file I/O, data transforms
+    that need actual computation — NOT for simple field extraction.
+  - Use RESEARCHER (not retriever) when the query needs live web data.
+  - Use RETRIEVER when the query can be answered from the indexed knowledge base.
+

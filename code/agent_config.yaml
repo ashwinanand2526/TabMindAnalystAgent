@@ -93,3 +93,30 @@ browser:
   temperature: 0.3
   max_tokens: 1500
   description: STUB. Reserved for Session 9.
+
+# ── Tab Researcher skills (Session 8 extension) ──────────────────────────────
+# These three skills power the browser-extension comparison pipeline.
+# tab_reader   → receives pre-fetched tab HTML and produces a structured record
+# comparator   → builds a normalised matrix from N tab_reader/distiller results
+# verdict      → applies user focus weight and emits the final recommendation
+
+tab_reader:
+  prompt: prompts/tab_reader.md
+  tools_allowed: [fetch_url]          # content already in prompt, but allows backend scraping fallback if needed
+  temperature: 0.2
+  max_tokens: 2000
+  description: Receives pre-fetched browser-tab HTML/text and produces a structured product/content record with suggested comparison dimensions.
+
+comparator:
+  prompt: prompts/comparator.md
+  tools_allowed: []          # pure reasoning over structured distiller outputs
+  temperature: 0.1
+  max_tokens: 2500
+  description: Receives structured records from N tab_reader/distiller nodes and builds a normalised comparison matrix with per-dimension scores.
+
+verdict:
+  prompt: prompts/verdict.md
+  tools_allowed: []          # pure reasoning over comparator output
+  temperature: 0.3
+  max_tokens: 1000
+  description: Receives comparator output and applies user focus hint to produce a final recommendation with rationale, winner, runner-up, and caveats.
